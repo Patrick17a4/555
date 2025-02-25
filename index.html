@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🍽️ คำนวณแคลอรี่และคาร์โบไฮเดรต</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #fdf2e9;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h2, h3 { color: #ff6b6b; }
+        input, select, button {
+            display: block;
+            width: 100%;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+        }
+        button {
+            background-color: #ff6b6b;
+            color: white;
+            cursor: pointer;
+            border: none;
+        }
+        button:hover { background-color: #e63946; }
+        ul { list-style-type: none; padding: 0; }
+        ul li {
+            background: #ffe5d9;
+            margin: 5px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        canvas { max-width: 100%; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>📝 ข้อมูลส่วนตัว</h2>
+        <label>⚖️ น้ำหนัก (กก.)</label><input type="number" id="weight">
+        <label>📏 ส่วนสูง (ซม.)</label><input type="number" id="height">
+        <label>🎂 อายุ</label><input type="number" id="age">
+        <label>🚻 เพศ</label>
+        <select id="gender">
+            <option value="male">👨‍🦰 ชาย</option>
+            <option value="female">👩‍🦰 หญิง</option>
+        </select>
+        <label>🏋️ ระดับการออกกำลังกาย</label>
+        <select id="activity">
+            <option value="1.2">🛌 ไม่ออกกำลังกาย</option>
+            <option value="1.375">🚶 1-3 ครั้ง/สัปดาห์</option>
+            <option value="1.55">🏃 3-5 ครั้ง/สัปดาห์</option>
+            <option value="1.725">💪 6-7 ครั้ง/สัปดาห์</option>
+            <option value="1.9">🏋️ ทุกวัน</option>
+        </select>
+        <button onclick="calculateNeeds()">📊 คำนวณ</button>
+
+        <h3>📢 ค่าที่แนะนำ</h3>
+        <p>🔥 แคลอรี่ที่ต้องการ: <b><span id="caloriesNeed">-</span></b> kcal</p>
+        <p>🍞 คาร์โบไฮเดรตที่ต้องการ: <b><span id="carbsNeed">-</span></b> กรัม</p>
+
+        <h2>🍛 บันทึกเมนูอาหาร</h2>
+        <label>🥗 มื้ออาหาร</label>
+        <select id="meal">
+            <option value="เช้า">🌅 เช้า</option>
+            <option value="กลางวัน">🌞 กลางวัน</option>
+            <option value="เย็น">🌙 เย็น</option>
+            <option value="อาหารว่าง">🍪 อาหารว่าง</option>
+        </select>
+        <label>🍽️ เมนูอาหาร</label>
+        <select id="food">
+            <option value="ข้าว" data-cal="80" data-carb="15">🍚 ข้าว (1 ทัพพี)</option>
+            <option value="เส้น" data-cal="90" data-carb="15">🍜 เส้นทุกชนิด (1 ทัพพี)</option>
+            <option value="ขนมปัง" data-cal="80" data-carb="15">🍞 ขนมปัง (1 แผ่น)</option>
+            <option value="น้ำตาล" data-cal="60" data-carb="15">🍬 น้ำตาล (3 ช้อนชา)</option>
+        </select>
+        <button onclick="addFood()">➕ เพิ่มอาหาร</button>
+
+        <h3>📋 อาหารที่ทาน</h3>
+        <ul id="foodList"></ul>
+        
+        <h3>📊 สรุป</h3>
+        <p>🔥 แคลอรี่ที่ทานไป: <b><span id="caloriesTaken">0</span></b> kcal</p>
+        <p>🍞 คาร์โบไฮเดรตที่ทานไป: <b><span id="carbsTaken">0</span></b> กรัม</p>
+
+        <canvas id="calChart"></canvas>
+        <canvas id="carbChart"></canvas>
+
+        <button onclick="showSummary()">📌 สรุปการกิน</button>
+    </div>
+
+    <script>
+        let caloriesNeed = 0, carbsNeed = 0, caloriesTaken = 0, carbsTaken = 0;
+        let calChart, carbChart;
+
+        function calculateNeeds() {
+            let weight = parseFloat(document.getElementById("weight").value);
+            let height = parseFloat(document.getElementById("height").value);
+            let age = parseInt(document.getElementById("age").value);
+            let gender = document.getElementById("gender").value;
+            let activity = parseFloat(document.getElementById("activity").value);
+            
+            caloriesNeed = (gender === "male" ? (10 * weight + 6.25 * height - 5 * age + 5) : (10 * weight + 6.25 * height - 5 * age - 161)) * activity;
+            carbsNeed = (caloriesNeed * 0.5) / 4;
+
+            document.getElementById("caloriesNeed").textContent = Math.round(caloriesNeed);
+            document.getElementById("carbsNeed").textContent = Math.round(carbsNeed);
+            updateCharts();
+        }
+
+        function addFood() {
+            let food = document.getElementById("food");
+            let cal = parseInt(food.selectedOptions[0].getAttribute("data-cal"));
+            let carb = parseInt(food.selectedOptions[0].getAttribute("data-carb"));
+
+            caloriesTaken += cal;
+            carbsTaken += carb;
+
+            document.getElementById("caloriesTaken").textContent = caloriesTaken;
+            document.getElementById("carbsTaken").textContent = carbsTaken;
+            updateCharts();
+        }
+
+        function updateCharts() {
+            let ctx1 = document.getElementById('calChart').getContext('2d');
+            let ctx2 = document.getElementById('carbChart').getContext('2d');
+            if (calChart) calChart.destroy();
+            if (carbChart) carbChart.destroy();
+            calChart = new Chart(ctx1, { type: 'doughnut', data: { labels: ["บริโภคแล้ว", "เหลือ"], datasets: [{ data: [caloriesTaken, caloriesNeed - caloriesTaken], backgroundColor: ["#ff6b6b", "#ffdd99"] }] } });
+            carbChart = new Chart(ctx2, { type: 'doughnut', data: { labels: ["บริโภคแล้ว", "เหลือ"], datasets: [{ data: [carbsTaken, carbsNeed - carbsTaken], backgroundColor: ["#ff6b6b", "#ffdd99"] }] } });
+        }
+    </script>
+</body>
+</html>
